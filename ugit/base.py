@@ -1,6 +1,7 @@
 import os
 import itertools
 import operator
+import string
 
 from collections import namedtuple
 
@@ -114,6 +115,20 @@ def checkout(oid):
 	commit = get_commit(oid)
 	read_tree(commit.tree)
 	data.update_ref('HEAD', oid)
+
+def iter_commits_and_parents(oids):
+	oids = set(oids)
+	visited = set()
+
+	while oids:
+		oid = oids.pop()
+		if not oid or oid in visited:
+			continue
+		visited.add(oid)
+		yield oid
+		
+		commit = get_commit(oid)
+		oids.add(commit.parent)
 
 def get_oid(name):
 	if name == '@': name = 'HEAD'

@@ -2,6 +2,7 @@ import sys
 import argparse
 import os
 import textwrap
+import subprocess
 
 from . import data
 from . import base
@@ -53,6 +54,9 @@ def parse_args():
 	tag_parser.add_argument('name')
 	tag_parser.add_argument('oid', default='@', type=oid, nargs="?")
 
+	k_parser = commands.add_parser('name')
+	k_parser.set_defaults(func=k)
+
 	return parser.parse_args()
 
 	return parser.parse_args()
@@ -95,5 +99,25 @@ def checkout(args):
 def tag(args):
 	oid = args.oid 
 	base.create_tag(args.name, oid)
+
+def k(args):
+	dot = 'diagraph commits {\n'
+	oids = set()
+	for refname, ref in data.iter_refs():
+		dot += f'"{refname}" [shape=note]\n'
+		dot += f'"{refname}" -> "{ref}"\n'
+		oids.add(ref)
+
+	for oid in base.iter_commits_and_parents(oids):
+		commit = base.get_commit(oid)
+		dot += f'"{oid}" [shape=box stye=filled label="{oid[:10]}"]'
+		if commit.parent:
+			dot += f'"{oid}" -> "{commit.parent}"\n'
+	dot += '}'
+	print(dot)
+
+
+	with subprocess.Popen(['dot', '-Tgtk', '/dev/stdin'],stdin=subprocess.PIPE) as proc:
+		proc.communicate(dot.encode())
 
 
